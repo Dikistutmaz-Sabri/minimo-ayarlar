@@ -1,0 +1,4 @@
+# Minimo OS's own defaults: read only in its session (XDG_CURRENT_DESKTOP has
+# Minimo); Plasma, pleamar and serpantinum keep ~/.config/mimeapps.list.
+[Default Applications]
+inode/directory=org.gnome.Nautilus.desktop

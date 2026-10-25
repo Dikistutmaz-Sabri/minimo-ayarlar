@@ -1,0 +1,14 @@
+#!/bin/sh
+# The terminal for programs that ask for one (GLib, cachy-update's tray…):
+# GLib looks for this command before its own list, where Ghostty —installed for
+# Minimo OS— comes before Konsole. So Minimo gets kitty, and
+# every other session gets Konsole, as before Minimo was installed.
+#   xdg-terminal-exec [-e] [command [args…]]
+[ "${1:-}" = "-e" ] && shift
+case ":${XDG_CURRENT_DESKTOP:-}:" in
+    *:Minimo:*)
+        [ $# -gt 0 ] && exec kitty "$@"
+        exec kitty ;;
+esac
+[ $# -gt 0 ] && exec konsole -e "$@"
+exec konsole

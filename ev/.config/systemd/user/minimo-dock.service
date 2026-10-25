@@ -1,0 +1,16 @@
+# Minimo OS's dock (a pleamar scene), in Minimo's session only.
+[Unit]
+Description=Minimo OS dock (pleamar)
+PartOf=minimo-session.target
+After=minimo-session.target minimo-shell.service
+
+[Service]
+# Programs opened from it are not its own: a restart stops only it.
+KillMode=process
+ExecStartPre=/bin/sleep 2
+ExecStart=%h/.local/bin/pleamar --scene %h/.config/pleamar/shells/minimo-dock/dock.plm --no-hud
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=minimo-session.target

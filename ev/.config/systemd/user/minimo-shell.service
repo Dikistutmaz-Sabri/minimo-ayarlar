@@ -1,0 +1,16 @@
+# Minimo OS's shell (Quickshell), in Minimo's session only.
+[Unit]
+Description=Minimo OS shell (Quickshell)
+PartOf=minimo-session.target
+After=minimo-session.target
+
+[Service]
+# Programs opened from it are not its own: a restart stops only it.
+KillMode=process
+LimitNOFILE=65536
+ExecStart=/usr/bin/qs -p %h/Proyectos/minimo-os/minimo-shell
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=minimo-session.target

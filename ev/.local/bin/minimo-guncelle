@@ -1,0 +1,20 @@
+#!/bin/sh
+# Minimo OS, updated without its install.sh —which would put Minimo in place of
+# serpantinum (~/.config/hypr/hyprland.lua) and SDDM—. The changes kept here
+# (Turkish, kitty, the island) are the commit(s) of the branch `yerel`: the
+# repository's news is fetched and they are put back on top of it (a rebase;
+# anything not committed rides along). Then the shell restarts. Minimo's
+# Updates page shows this command.
+set -e
+R="$HOME/Proyectos/minimo-os"
+cd "$R"
+[ "$(git branch --show-current)" = "yerel" ] || git switch -q yerel
+git fetch -q origin
+if ! git rebase -q --autostash origin/main; then
+    git rebase --abort 2>/dev/null || true
+    echo "Güncellenemedi: yerel değişiklikler yeni sürümle çakıştı. Hiçbir şey değişmedi." >&2
+    echo "Bakmak için: git -C $R log --oneline yerel..origin/main" >&2
+    exit 1
+fi
+systemctl --user restart minimo-shell 2>/dev/null || true
+echo "Minimo OS güncellendi: $(git log -1 --format='%h' origin/main) · yerel değişiklikler üstünde ($(git rev-list --count origin/main..yerel) commit)"

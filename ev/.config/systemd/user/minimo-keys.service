@@ -1,0 +1,14 @@
+# The keys, in Turkish, on Minimo's wallpaper (a pleamar scene), in Minimo's session only.
+[Unit]
+Description=Minimo OS key sheet on the wallpaper (pleamar)
+PartOf=minimo-session.target
+After=minimo-session.target minimo-shell.service
+
+[Service]
+ExecStartPre=/bin/sleep 2
+ExecStart=%h/.local/bin/pleamar --scene %h/.config/pleamar/shells/minimo-keys/keys.plm --no-hud
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=minimo-session.target

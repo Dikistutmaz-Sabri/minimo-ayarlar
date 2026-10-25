@@ -1,0 +1,7 @@
+# Minimo OS's session, and only it: minimo-session (the SDDM entry's starter)
+# has Hyprland start it, and stops it when Hyprland ends. Nothing of Minimo
+# hangs on graphical-session.target, so Plasma, pleamar and serpantinum never
+# start any of it.
+[Unit]
+Description=Minimo OS session
+StopWhenUnneeded=no

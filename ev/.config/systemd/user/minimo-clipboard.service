@@ -1,0 +1,13 @@
+# Minimo OS's clipboard history (cliphist), in Minimo's session only.
+[Unit]
+Description=Minimo OS clipboard history (cliphist)
+PartOf=minimo-session.target
+After=minimo-session.target
+
+[Service]
+ExecStart=/bin/sh -c 'wl-paste --type text --watch cliphist -max-items 200 store & wl-paste --type image --watch cliphist -max-items 200 store & wait'
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=minimo-session.target

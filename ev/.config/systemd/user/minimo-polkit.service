@@ -1,0 +1,14 @@
+# The password dialogue (hyprpolkitagent), in Minimo's session only: its own
+# hyprpolkitagent.service is not enabled, so no other session gets it.
+[Unit]
+Description=Minimo OS polkit agent (hyprpolkitagent)
+PartOf=minimo-session.target
+After=minimo-session.target
+
+[Service]
+ExecStart=/usr/lib/hyprpolkitagent/hyprpolkitagent
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=minimo-session.target

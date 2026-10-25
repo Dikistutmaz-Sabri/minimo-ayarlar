@@ -1,0 +1,259 @@
+language 0.1
+
+// Minimo OS's dock, as pleamar-wm's shore is: the programs kept on it and the
+// others with windows, a drop under each per window (a coral one when a window
+// asks for you); the icons rise like buoys as the mouse passes, and one
+// pressed rings and goes to its window —the next one, pressed again— or starts
+// the program. Its name shows over it; held a moment, its windows rise as a
+// list to pick from; a file dropped on it opens with it. The right button
+// keeps it on the dock or lets it go, opens another window, closes its
+// windows; carried up off the dock, it is let go. After the programs, the
+// windows put away (Super+M), and at the end tiled or free windows (Super+W).
+// It hides itself when a window comes over it (or one is fullscreen), and
+// comes back when the mouse goes to the bottom edge. dock.luau reads Hyprland;
+// minimo-dock.service starts it, in Minimo's session only. Its colours follow
+// Minimo's light or dark theme.
+
+scene MinimoDock {
+    surface {
+        size: 1400, 330
+        anchor: bottom
+        margin: 0, 0, 8, 0
+        level: top
+        reserve: 0
+        keyboard: none
+    }
+    permissions {
+        run: "hyprctl", "sh"
+        services: "apps", "apps.launch", "env"
+    }
+
+    model items max 16 { icon: image 40, 40; name: text; wins: number = 0; active: bool = false; urgent: bool = false; pinned: bool = false }
+    model away max 8 { icon: image 32, 32; title: text }
+    model peeks max 8 { title: text; hidden: bool = false }
+    fact n = 0                  // programs
+    fact a = 0                  // windows put away
+    fact hide = false           // a window over it, or one fullscreen (dock.luau)
+    fact reveal = false         // the mouse at the bottom edge: it comes back
+    fact dark = false           // Minimo's theme
+    fact free = false           // free windows (Super+W)
+    fact hov = -1               // the program under the pointer: the buoys around it rise
+    fact carry = -1             // the one being carried off the dock
+    fact peek = -1              // the one whose windows are listed (held)
+    fact menu = -1              // the one whose menu is open (right button)
+    fact menu.wins = 0
+    text menu.pin = ""
+    event pick ->
+    event peek_at ->
+    event go ->
+    event menu_at ->
+    event menu_do ->
+    event unpin ->
+    event dropped ->
+    event back ->
+    event mode ->
+
+    //  Where things go: the strip is wide enough for all of it, centred.
+    let cell = 58
+    let wa = n * cell
+    let wb = if(a > 0, a * 50 + 14, 0)
+    let w = 24 + wa + wb + 62
+    let x0 = 700 - w / 2 + 12
+    let xb = x0 + wa + 14
+    let xm = 700 + w / 2 - 33
+    let top = 258
+
+    //  Hidden: everything slides down out of sight, and the bottom edge waits
+    //  for the mouse.
+    prop sh = 1 ~calm
+    follow sh = if(hide and not reveal and peek < 0 and menu < 0 and carry < 0, 0, 1)
+    let on = sh > 0.5
+    zone box edge { from: 0, 322; size: 1400, 8; active: hide and not reveal }
+    on enter edge { reveal = true }
+
+    //  Anywhere else, while a list or a menu is up: it closes them.
+    zone box outside { from: 0, 0; size: 1400, 330; active: peek >= 0 or menu >= 0 }
+    on press outside { peek = -1; menu = -1 }
+    on press right outside { peek = -1; menu = -1 }
+
+    group {
+    move: 0, (1 - sh) * 120
+    opacity: 0.25 + 0.75 * sh
+
+    body {
+        color: if(dark, #1f2022, #f6f6f5)     // the title bars' own colours (cubuk.lua)
+        opacity: 100%
+        shadow: 0, 6, 22, 30%
+        box { at: 700, top + 34; size: w, 68; corner: 22 }
+    }
+    box { at: 700, top + 34; size: w, 68; corner: 22; stroke: 1; color: if(dark, #ffffff, #000000); opacity: 8% }
+
+    // ── the programs ──
+    component Item(d: record) {
+        size: 58, 68
+        prop glow = 0 ~140ms
+        prop lift = 0 ~lively
+        follow lift = if(hov < 0 or carry >= 0, 0, max(0, 1 - abs(hov - d.index) * 0.55))
+        let carried = if(carry == d.index, 1, 0)
+        group {
+            move: carried * drag.dx, carried * drag.dy
+            opacity: 1 - carried * 0.35
+            box { at: 29, 34; size: 50, 50; corner: 14; color: if(dark, #ffffff, #000000); opacity: glow * 6% + if(d.active, 9%, 0%) }
+            group {
+                pivot: 29, 60
+                scale: 1 + lift * 0.18, 1 + lift * 0.18
+                move: 0, -lift * 7
+                image d.icon { at: 9, 14; size: 40, 40 }
+                //  Something unread, a window asking: a coral drop.
+                ellipse { at: 47, 16; radius: 4.5; color: #ff7a6b; show: d.urgent }
+            }
+            //  A drop under it per window (up to four).
+            repeat j in 0..4 {
+                ellipse { at: 29 + (j - (min(d.wins, 4) - 1) / 2) * 6, 63; radius: 2.3
+                          color: if(dark, #e8e8e8, #2b2b2b); show: j < d.wins }
+            }
+        }
+        //  Its name above it.
+        group {
+            opacity: glow * if(peek < 0 and menu < 0 and carry < 0, 1, 0)
+            body {
+                color: if(dark, #2a2b2e, #ffffff)
+                opacity: 96%
+                shadow: 0, 3, 10, 25%
+                box { at: 29, -20; size: 170, 26; corner: 13 }
+            }
+            text d.name { at: 29, -20; anchor: center; size: 11.5; width: 160; lines: 1; align: center
+                          color: if(dark, #f0f0f0, #222222); family: "Adwaita Sans" }
+        }
+        zone box touch { at: 29, 34; size: 54, 60; corner: 14; cursor: pointer; label: d.name; role: button; active: on }
+        on enter touch { glow: 1; hov = d.index }
+        on leave touch { glow: 0; hov = -1 }
+        //  Let go: pressed, it goes; carried up off the dock, it is let go.
+        on release touch while carry < 0 and peek < 0 and menu < 0 { ripple touch; emit pick(d.index) }
+        on release touch while carry == d.index and drag.dy < -60 { emit unpin(d.index) }
+        on release touch { carry = -1 }
+        on drag touch while carry < 0 and drag.dy < -24 { carry = d.index }
+        on hold touch for 550ms { peek = d.index; emit peek_at(d.index) }
+        on press right touch { menu = d.index; peek = -1; emit menu_at(d.index) }
+        on drop touch { emit dropped(d.index) }
+    }
+    row { at: x0, top; gap: 0
+        for d in items { Item(d) } }
+
+    // ── the windows put away ──
+    box { at: xb - 7, top + 34; size: 1, 40; color: if(dark, #ffffff, #000000); opacity: 14%; show: a > 0 }
+    component Away(v: record) {
+        size: 50, 68
+        prop glow = 0 ~140ms
+        box { at: 25, 34; size: 44, 44; corner: 12; stroke: 1.5; color: if(dark, #9ed6bd, #2f8f6d); opacity: 70% + glow * 30% }
+        image v.icon { at: 9, 18 - glow * 3; size: 32, 32; opacity: 80% + glow * 20% }
+        group {
+            opacity: glow * if(peek < 0 and menu < 0, 1, 0)
+            body {
+                color: if(dark, #2a2b2e, #ffffff)
+                opacity: 96%
+                shadow: 0, 3, 10, 25%
+                box { at: 25, -20; size: 220, 26; corner: 13 }
+            }
+            text v.title { at: 25, -20; anchor: center; size: 11.5; width: 210; lines: 1; align: center
+                           color: if(dark, #f0f0f0, #222222); family: "Adwaita Sans" }
+        }
+        zone box hit { at: 25, 34; size: 48, 56; corner: 12; cursor: pointer; label: v.title; role: button; active: on }
+        on enter hit { glow: 1 }
+        on leave hit { glow: 0 }
+        on press hit { ripple hit; emit back(v.index) }
+    }
+    row { at: xb, top; gap: 0
+        for v in away { Away(v) } }
+
+    // ── tiled or free windows ──
+    box { at: xm - 29, top + 34; size: 1, 40; color: if(dark, #ffffff, #000000); opacity: 14% }
+    group {
+        prop mglow = 0 ~140ms
+        box { at: xm, top + 34; size: 50, 50; corner: 14; color: if(dark, #ffffff, #000000); opacity: mglow * 7% }
+        group {
+            show: not free
+            box { at: xm - 6, top + 28; size: 11, 11; corner: 2.5; color: if(dark, #e8e8e8, #2b2b2b) }
+            box { at: xm + 6, top + 28; size: 11, 11; corner: 2.5; color: if(dark, #e8e8e8, #2b2b2b) }
+            box { at: xm - 6, top + 40; size: 11, 11; corner: 2.5; color: if(dark, #e8e8e8, #2b2b2b) }
+            box { at: xm + 6, top + 40; size: 11, 11; corner: 2.5; color: if(dark, #e8e8e8, #2b2b2b) }
+        }
+        group {
+            show: free
+            box { at: xm - 4, top + 30; size: 18, 14; corner: 3; stroke: 1.8; color: if(dark, #9ed6bd, #2f8f6d) }
+            box { at: xm + 4, top + 39; size: 18, 14; corner: 3; color: if(dark, #9ed6bd, #2f8f6d) }
+        }
+        group {
+            opacity: mglow * if(peek < 0 and menu < 0, 1, 0)
+            body {
+                color: if(dark, #2a2b2e, #ffffff)
+                opacity: 96%
+                shadow: 0, 3, 10, 25%
+                box { at: xm - 80, top - 20; size: 230, 26; corner: 13 }
+            }
+            text pick(free, "Döşeli pencerelere geç (Super+W)", "Serbest pencerelere geç (Super+W)") {
+                at: xm - 80, top - 20; anchor: center; size: 11.5; width: 220; lines: 1; align: center
+                color: if(dark, #f0f0f0, #222222); family: "Adwaita Sans" }
+        }
+        zone box mode_z { at: xm, top + 34; size: 54, 60; corner: 14; cursor: pointer; label: "Döşeli ya da serbest pencereler"; role: button; active: on }
+        on enter mode_z { mglow: 1 }
+        on leave mode_z { mglow: 0 }
+        on press mode_z { ripple mode_z; emit mode }
+    }
+
+    // ── held: its windows, to pick one ──
+    let p_h = max(1, peeks.count) * 30 + 20
+    let px = clamp(x0 + peek * cell + 29, 140, 1260)
+    group {
+        show: peek >= 0
+        body {
+            color: if(dark, #2a2b2e, #ffffff)
+            opacity: 97%
+            shadow: 0, 6, 18, 30%
+            box { from: px - 130, top - 18 - p_h; size: 260, p_h; corner: 16 }
+        }
+        repeat r in 0..8 {
+            let ry = top - 18 - p_h + 10 + r * 30
+            group {
+                show: r < peeks.count
+                prop rglow = 0 ~120ms
+                box { from: px - 122, ry; size: 244, 28; corner: 9; color: if(dark, #ffffff, #000000); opacity: rglow * 8% }
+                text peeks.$r.title { at: px - 112, ry + 14; anchor: left center; size: 11.5; width: 200; lines: 1
+                                      color: if(dark, #f0f0f0, #222222); family: "Adwaita Sans" }
+                text "gizli" { at: px + 112, ry + 14; anchor: right center; size: 10; color: if(dark, #9ed6bd, #2f8f6d); show: peeks.$r.hidden }
+                zone box row.$r { from: px - 122, ry; size: 244, 28; corner: 9; cursor: pointer; active: peek >= 0 and r < peeks.count }
+                on enter row.$r { rglow: 1 }
+                on leave row.$r { rglow: 0 }
+                on press row.$r { peek = -1; emit go(r) }
+            }
+        }
+    }
+
+    // ── the right button's menu ──
+    let mx = clamp(x0 + menu * cell + 29, 120, 1280)
+    let m_h = if(menu.wins > 0, 3, 2) * 32 + 16
+    group {
+        show: menu >= 0
+        body {
+            color: if(dark, #2a2b2e, #ffffff)
+            opacity: 97%
+            shadow: 0, 6, 18, 30%
+            box { from: mx - 100, top - 18 - m_h; size: 200, m_h; corner: 16 }
+        }
+        repeat k in 0..3 {
+            let ky = top - 18 - m_h + 8 + k * 32
+            group {
+                show: k < 2 or menu.wins > 0
+                prop kglow = 0 ~120ms
+                box { from: mx - 92, ky; size: 184, 30; corner: 9; color: if(k == 2, #ff7a6b, if(dark, #ffffff, #000000)); opacity: kglow * if(k == 2, 18%, 8%) }
+                text pick(k, menu.pin, "Yeni pencere", "Pencereleri kapat") { at: mx - 80, ky + 15; anchor: left center; size: 12
+                          color: if(k == 2, #e0655a, if(dark, #f0f0f0, #222222)); family: "Adwaita Sans" }
+                zone box item.$k { from: mx - 92, ky; size: 184, 30; corner: 9; cursor: pointer; active: menu >= 0 and (k < 2 or menu.wins > 0) }
+                on enter item.$k { kglow: 1 }
+                on leave item.$k { kglow: 0 }
+                on press item.$k { menu = -1; emit menu_do(k) }
+            }
+        }
+    }
+    }
+}

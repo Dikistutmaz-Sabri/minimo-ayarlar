@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Minimo OS
+Comment=Hyprland + Minimo kabuğu (serpantinum'dan ayrı bir oturum)
+Exec=/usr/local/bin/minimo-session
+Type=Application
+DesktopNames=Hyprland;Minimo

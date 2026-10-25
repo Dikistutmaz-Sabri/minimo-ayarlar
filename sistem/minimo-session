@@ -1,0 +1,9 @@
+#!/bin/sh
+# Minimo OS's session (the SDDM entry «Minimo OS»): Hyprland with Minimo's own
+# config file, so serpantinum's ~/.config/hypr/hyprland.lua is never read. When
+# it ends, Minimo's services stop: none of them is left for another session.
+export XDG_CURRENT_DESKTOP=Hyprland:Minimo
+export XDG_SESSION_DESKTOP=minimo
+start-hyprland -- --config "$HOME/.config/hypr/minimo-oturum.lua"
+systemctl --user stop minimo-session.target
+systemctl --user unset-environment XDG_SESSION_DESKTOP
