@@ -53,10 +53,14 @@ hl.plugin.hyprbars.add_button({ bg_color = "rgb(e8c26a)", fg_color = "rgb(4a3308
 	action = "hyprctl eval 'minimo_gizle()'" })
 
 hl.window_rule({ match = { float = false }, ["hyprbars:no_bar"] = true })
--- Without the keyboard, the bar is grey and its title faded, as in pleamar-wm.
-pcall(hl.window_rule, { match = { focus = false }, ["hyprbars:bar_color"] = "rgb(1a1e22)", ["hyprbars:title_color"] = "rgba(f5f7f58c)" })
--- Chrome draws its own title bar and buttons: no second one over it.
-hl.window_rule({ match = { class = "^(google-chrome.*|chromium|Google-chrome.*)$" }, ["hyprbars:no_bar"] = true })
+
+-- Programs that draw their own title bar and buttons (GNOME's, Chrome's tabs,
+-- Firefox's): no second bar over theirs.
+local OWN = "^(org\\.gnome\\..*|google-chrome.*|Google-chrome.*|chromium|firefox|zen)$"
+hl.window_rule({ match = { class = OWN }, ["hyprbars:no_bar"] = true })
+-- Without the keyboard, the bar is grey and its title faded, as in pleamar-wm
+-- (not on those above: a colour rule brought their bar back).
+pcall(hl.window_rule, { match = { focus = false, class = "negative:" .. OWN }, ["hyprbars:bar_color"] = "rgb(1a1e22)", ["hyprbars:title_color"] = "rgba(f5f7f58c)" })
 
 -- pleamar-wm's frame is always its own dark one, whatever Minimo's theme; the
 -- dock still calls this when the theme changes, and nothing changes.

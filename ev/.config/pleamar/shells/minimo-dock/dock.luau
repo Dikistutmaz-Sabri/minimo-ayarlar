@@ -176,7 +176,7 @@ local function read()
         if here_ws > last then last = here_ws end
         local prow = {}
         pools = {}
-        for id = 1, math.min(last + 1, 10) do
+        for id = 1, 3 do   -- Minimo has three (~/.config/hypr/minimo/masaustu.lua)
             pools[#pools + 1] = id
             prow[#prow + 1] = { active = id == here_ws, wins = count[id] or 0 }
         end

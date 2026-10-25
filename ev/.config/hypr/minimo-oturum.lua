@@ -33,3 +33,4 @@ require("minimo")
 require("minimo.serbest")      -- free windows and the dock's putting away, as in pleamar-wm
 require("minimo.terminal")     -- kitty as the terminal
 require("minimo.cubuk")        -- title bars with buttons on free windows
+require("minimo.masaustu")     -- three workspaces
