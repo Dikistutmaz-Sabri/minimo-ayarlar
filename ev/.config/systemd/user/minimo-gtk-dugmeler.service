@@ -1,0 +1,19 @@
+# GNOME's programs draw their own title bar; their minimize button asks the
+# compositor, and Hyprland ignores it. In Minimo's session their own buttons
+# are hidden (GNOME's button layout emptied) and they take Minimo's title bar
+# instead (cubuk.lua), whose put-away drop does go into the dock. The layout
+# there was is kept in ~/.config/minimo-os/gtk-button-layout and written back
+# when the session ends (Plasma writes its own at every login anyway).
+[Unit]
+Description=Minimo OS: GNOME programs' own window buttons hidden
+PartOf=minimo-session.target
+After=minimo-session.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'f=$HOME/.config/minimo-os/gtk-button-layout; cur=$(gsettings get org.gnome.desktop.wm.preferences button-layout); [ "$cur" = "\'\'" ] || [ "$cur" = "\':\'" ] || echo "$cur" > "$f"; gsettings set org.gnome.desktop.wm.preferences button-layout ":"'
+ExecStop=/bin/sh -c 'f=$HOME/.config/minimo-os/gtk-button-layout; v=$(cat "$f" 2>/dev/null | tr -d "\'"); gsettings set org.gnome.desktop.wm.preferences button-layout "${v:-icon:minimize,maximize,close}"'
+
+[Install]
+WantedBy=minimo-session.target

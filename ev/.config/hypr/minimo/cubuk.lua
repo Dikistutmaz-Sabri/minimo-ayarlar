@@ -54,9 +54,12 @@ hl.plugin.hyprbars.add_button({ bg_color = "rgb(e8c26a)", fg_color = "rgb(4a3308
 
 hl.window_rule({ match = { float = false }, ["hyprbars:no_bar"] = true })
 
--- Programs that draw their own title bar and buttons (GNOME's, Chrome's tabs,
--- Firefox's): no second bar over theirs.
-local OWN = "^(org\\.gnome\\..*|google-chrome.*|Google-chrome.*|chromium|firefox|zen)$"
+-- Programs that draw their own title bar and buttons (Firefox's tabs): no
+-- second bar over theirs. GNOME's programs are not here: in Minimo their own
+-- buttons are hidden (minimo-gtk-dugmeler.service) and they take this bar,
+-- whose put-away drop goes into the dock (theirs asked Hyprland, which ignores
+-- it). Nor Chrome: with its «Use system title bar and borders» on, it has none.
+local OWN = "^(firefox|zen)$"
 hl.window_rule({ match = { class = OWN }, ["hyprbars:no_bar"] = true })
 -- Without the keyboard, the bar is grey and its title faded, as in pleamar-wm
 -- (not on those above: a colour rule brought their bar back).
