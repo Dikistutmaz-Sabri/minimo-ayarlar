@@ -1,0 +1,33 @@
+#!/bin/bash
+# Minimo OS, checked after a login: the session, its services, the title bars,
+# the dock, free windows, the terminal, and Hyprland's warnings.
+#   minimo-kontrol
+ok=0; bad=0
+yes() { echo "  ✓ $*"; ok=$((ok+1)); }
+no()  { echo "  ✗ $*"; bad=$((bad+1)); }
+echo "Minimo OS denetimi · $(date '+%d.%m %H:%M')"
+[[ ":$XDG_CURRENT_DESKTOP:" == *:Minimo:* ]] && yes "oturum: $XDG_CURRENT_DESKTOP" || no "oturum Minimo değil: $XDG_CURRENT_DESKTOP"
+[ "$(hyprctl getoption misc:disable_xdg_env_checks | awk '/bool/{print $2}')" = "true" ] && yes "XDG uyarısı kapalı" || no "XDG uyarısı açık"
+errs=$(hyprctl configerrors | tr -d '[:space:]'); [ -z "$errs" ] && yes "Hyprland ayar hatası yok" || no "Hyprland ayar hataları: $(hyprctl configerrors | head -3)"
+L=$(ls -t "$XDG_RUNTIME_DIR"/hypr/*/hyprland.log 2>/dev/null | head -1)
+if [ -n "$L" ] && grep -qiE "externally managed|XDG_CURRENT_DESKTOP.*(extern|issue)" "$L"; then no "günlükte XDG uyarısı var"; else yes "günlükte XDG uyarısı yok"; fi
+for u in minimo-shell minimo-clipboard minimo-polkit minimo-keys minimo-dock; do
+    [ "$(systemctl --user is-active $u)" = "active" ] && yes "$u çalışıyor" || no "$u çalışmıyor ($(systemctl --user is-active $u))"
+done
+for u in minimo-shell minimo-dock; do
+    [ "$(systemctl --user show $u -p KillMode --value)" = "process" ] && yes "$u yeniden başlarken yalnızca kendini durdurur" || no "$u KillMode yanlış"
+done
+hyprctl plugin list 2>/dev/null | grep -q hyprbars && yes "başlık çubuğu eklentisi yüklü" || no "hyprbars yüklü değil"
+[ "$(cat "$XDG_RUNTIME_DIR/minimo-serbest" 2>/dev/null)" = "1" ] && yes "serbest (yüzen) pencereler açık" || no "serbest mod kapalı"
+tiled=$(hyprctl clients -j | python3 -I -c "import json,sys;print(sum(1 for c in json.load(sys.stdin) if not c['floating'] and not c['workspace']['name'].startswith('special')))")
+[ "$tiled" = "0" ] && yes "döşeli pencere yok" || no "$tiled pencere döşeli"
+n=$(timeout 3 pleamar --say dock "get n" 2>/dev/null); [ -n "$n" ] && [ "$n" -gt 0 ] && yes "dock: $n uygulama" || no "dock yanıt vermiyor"
+k=$(timeout 3 pleamar --say keys "get n" 2>&1); pgrep -f "[m]inimo-keys/keys.plm" >/dev/null && yes "kısayol kartı açık" || no "kısayol kartı yok"
+#  Which terminal it would pick, without opening one: stand-ins that say their name.
+fake=$(mktemp -d); for x in kitty konsole ghostty; do printf '#!/bin/sh\necho %s\n' $x > "$fake/$x"; chmod +x "$fake/$x"; done
+t=$(PATH="$fake:$PATH" "$HOME/.local/bin/xdg-terminal-exec" true); rm -rf "$fake"
+[ "$t" = "kitty" ] && yes "terminal isteyen programlar: kitty" || no "terminal seçici: $t"
+p=$(python3 -I "$HOME/Proyectos/minimo-os/minimo-shell/scripts/sysstatus.py" 2>/dev/null | tail -1 | python3 -I -c "import json,sys;d=json.load(sys.stdin)['dev'];print(len(d['keyboards']),len(d.get('touchpads',[])),len(d['mice']))" 2>/dev/null)
+[ "$p" = "1 1 1" ] && yes "aygıtlar: 1 klavye, 1 dokunmatik yüzey, 1 fare" || no "aygıtlar (klavye dokunmatik fare): $p"
+grep -q '"language": *"tr"' "$HOME/.config/minimo-os/state.json" && yes "Minimo dili Türkçe" || no "Minimo dili Türkçe değil"
+echo "Sonuç: $ok tamam, $bad sorun"
