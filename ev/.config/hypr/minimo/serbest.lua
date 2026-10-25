@@ -73,11 +73,21 @@ hl.on("window.close", function(w)
 	if w then floated[w.address] = nil end
 end)
 
+--  Put away into the dock, as in pleamar-wm, where it waits as a small picture
+--  of itself: taken just before it goes (with its title bar, at a quarter of
+--  its size) into $XDG_RUNTIME_DIR/minimo-kucuk/<address>-<time>.png, then it
+--  goes. The dock shows the newest picture of each.
+local THUMBS = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/minimo-kucuk"
 function minimo_gizle()
 	local w = hl.get_active_window()
 	if not w then return end
-	hidden[#hidden + 1] = w.address
-	hl.dispatch(hl.dsp.window.move({ workspace = "special:minimo", window = "address:" .. w.address, follow = false }))
+	local addr = w.address
+	hidden[#hidden + 1] = addr
+	local top = (w.floating and BAR or 0)
+	local geo = string.format("%d,%d %dx%d", w.at.x, w.at.y - top, w.size.x, w.size.y + top)
+	local move = "hyprctl dispatch 'hl.dsp.window.move({ workspace = \"special:minimo\", window = \"address:" .. addr .. "\", follow = false })'"
+	hl.exec_cmd(string.format("sh -c 'mkdir -p %s; rm -f %s/%s-*.png; grim -s 0.25 -g \"%s\" %s/%s-%d.png; %s' ",
+		THUMBS, THUMBS, addr, geo, THUMBS, addr, os.time(), move:gsub("'", "'\\''")))
 end
 
 function minimo_getir(addr)

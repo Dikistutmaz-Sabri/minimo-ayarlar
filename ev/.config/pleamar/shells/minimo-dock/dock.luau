@@ -18,7 +18,8 @@ local RUNTIME = sys.ask("env", "XDG_RUNTIME_DIR") or "/tmp"
 
 local apps = {}
 local pins = nil
-local shown, away = {}, {}
+local shown, away, pools = {}, {}, {}
+local THUMBS = RUNTIME .. "/minimo-kucuk"
 local dropped_paths = nil
 local last_dark = nil
 
@@ -81,8 +82,8 @@ local function read()
     if pins == nil then return end
     run("sh", { "-c", 'hyprctl clients -j; echo "@@"; hyprctl activewindow -j; echo "@@"; hyprctl workspaces -j; echo "@@"; hyprctl activeworkspace -j; echo "@@"; '
         .. 'hyprctl repl "local w = hl.get_urgent_window() return w and w.address or \\"\\""; echo "@@"; cat "$1" 2>/dev/null; echo "@@"; cat "$2" 2>/dev/null; '
-        .. 'echo "@@"; hyprctl monitors -j; echo "@@"; hyprctl cursorpos',
-        "sh", RUNTIME .. "/minimo-serbest", STATE }, function(out)
+        .. 'echo "@@"; hyprctl monitors -j; echo "@@"; hyprctl cursorpos; echo "@@"; ls "$3" 2>/dev/null',
+        "sh", RUNTIME .. "/minimo-serbest", STATE, THUMBS }, function(out)
         local parts = {}
         for p in (tostring(out or "") .. "@@"):gmatch("(.-)@@") do parts[#parts + 1] = p end
         local okc, clients = pcall(json.decode, parts[1] or "")
@@ -100,7 +101,6 @@ local function read()
             last_dark = dark
             run("hyprctl", { "eval", "if minimo_cubuk_tema then minimo_cubuk_tema(" .. tostring(dark) .. ") end" }, function() end)
         end
-        fact.dark = dark
 
         --  Each window, to its program (or to its class, when no program is known).
         local by_key, order = {}, {}
@@ -118,6 +118,11 @@ local function read()
         table.sort(clients, function(x, y) return (x.focusHistoryID or 0) < (y.focusHistoryID or 0) end)
         local away_rows = {}
         away = {}
+        local thumb = {}
+        for name in tostring(parts[10] or ""):gmatch("[^\n]+") do
+            local ad, tm = name:match("^(0x%x+)%-(%d+)%.png$")
+            if ad and (not thumb[ad] or tonumber(tm) > thumb[ad].t) then thumb[ad] = { t = tonumber(tm), path = THUMBS .. "/" .. name } end
+        end
         for _, c in ipairs(clients) do
             local ws = type(c.workspace) == "table" and tostring(c.workspace.name or "") or ""
             if c.mapped ~= false and (ws:sub(1, 8) ~= "special:" or ws == "special:minimo") and tostring(c.class or "") ~= "" then
@@ -128,7 +133,9 @@ local function read()
                 e.windows[#e.windows + 1] = w
                 if w.hidden and #away < 8 then
                     away[#away + 1] = w
-                    away_rows[#away_rows + 1] = { icon = a and tostring(a.icon or "") or tostring(c.class):lower(), title = w.title }
+                    local th = thumb[c.address]
+                    away_rows[#away_rows + 1] = { icon = a and tostring(a.icon or "") or tostring(c.class):lower(), title = w.title,
+                                                  thumb = th and th.path or "", has_thumb = th ~= nil }
                 end
             end
         end
@@ -157,13 +164,32 @@ local function read()
         --  Smart hide: a window of this workspace over the dock's strip, or one
         --  fullscreen, hides it; the mouse back at the bottom edge shows it (the
         --  scene's edge), until it goes up and away again.
+        --  The pools: those with windows, the one you are on, and an empty one past the last.
+        local here_ws = okaw and type(aws) == "table" and tonumber(aws.id) or 1
+        local count, last = {}, 0
+        if okw and type(spaces) == "table" then
+            for _, sp in ipairs(spaces) do
+                local id = tonumber(sp.id)
+                if id and id > 0 then count[id] = tonumber(sp.windows) or 0; if id > last then last = id end end
+            end
+        end
+        if here_ws > last then last = here_ws end
+        local prow = {}
+        pools = {}
+        for id = 1, math.min(last + 1, 10) do
+            pools[#pools + 1] = id
+            prow[#prow + 1] = { active = id == here_ws, wins = count[id] or 0 }
+        end
+        model.pools = prow
+        fact.p = #prow
+
         local okm, mons = pcall(json.decode, parts[8] or "")
         local mon = okm and type(mons) == "table" and mons[1] or nil
         if mon then
             local W, H = mon.width / mon.scale, mon.height / mon.scale
             local here = okaw and type(aws) == "table" and tonumber(aws.id) or 1
-            local dw = 24 + #rows * 58 + (#away_rows > 0 and #away_rows * 50 + 14 or 0) + 62
-            local x1, x2, y1 = (W - dw) / 2, (W + dw) / 2, H - 84
+            local dw = 28 + #rows * 60 + (#away_rows > 0 and 20 + #away_rows * 76 or 0) + 20 + #prow * 26 + 52
+            local x1, x2, y1 = (W - dw) / 2, (W + dw) / 2, H - 80
             local over = false
             for _, c in ipairs(clients) do
                 local ws = type(c.workspace) == "table" and tonumber(c.workspace.id) or -1
@@ -293,6 +319,10 @@ on("dropped", function(i) dropped_on = tonumber(i) or 0; open_dropped(); after(1
 on("back", function(i)
     local w = away[(tonumber(i) or 0) + 1]
     if w then eval('minimo_getir("' .. w.addr .. '")'); after(150, read) end
+end)
+on("pool", function(i)
+    local id = pools[(tonumber(i) or 0) + 1]
+    if id then hypr('hl.dsp.focus({ workspace = "' .. id .. '" })'); after(150, read) end
 end)
 on("mode", function() eval("minimo_serbest()"); after(200, read) end)
 

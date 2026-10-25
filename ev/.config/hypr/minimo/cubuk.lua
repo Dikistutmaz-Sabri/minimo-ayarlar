@@ -1,8 +1,23 @@
--- Title bars on Minimo's free windows, as in Plasma: the title, and at the top
--- right put away (into the dock), maximize and close; a double click on the bar
--- maximizes. Hyprland's own hyprbars plugin (the AUR package
--- hyprland-plugin-hyprbars, which follows Hyprland's version), loaded here
--- only: no other session has it. Tiled windows have no bar: the tile is all theirs.
+-- Free windows' frame, as pleamar-wm draws it: a 30 px title bar, darker green
+-- when the window has the keyboard (#1d2b27) and grey when it has not
+-- (#1a1e22), its title on the left (faded without the keyboard), and on the
+-- right three drops: put away (amber), maximize (mint), close (coral), each
+-- showing what it does when the mouse is on it. Rounded 12 px, a mint edge
+-- round the window with the keyboard. A double click on the bar maximizes.
+-- Hyprland's own hyprbars plugin (the AUR package hyprland-plugin-hyprbars,
+-- which follows Hyprland's version), loaded here only: no other session has
+-- it. Tiled windows have no bar, as in pleamar-wm: the tile is all theirs.
+
+--  The edge and corners of pleamar-wm's windows (before the plugin: they stand
+--  even if it could not be loaded).
+hl.config({
+	general = {
+		border_size = 2,
+		["col.active_border"] = "rgba(9ed6bdb3)",
+		["col.inactive_border"] = "rgba(00000000)",
+	},
+	decoration = { rounding = 12 },
+})
 
 hl.plugin.load("/usr/lib/libhyprbars.so")
 
@@ -12,48 +27,37 @@ hl.config({
 	plugin = {
 		hyprbars = {
 			bar_height = 30,
-			bar_text_font = "Adwaita Sans",
-			bar_text_size = 11,
+			bar_color = "rgb(1d2b27)",
+			["col.text"] = "rgb(f5f7f5)",
+			bar_text_font = "Noto Sans",
+			bar_text_size = 12,
 			bar_text_weight = "medium",
-			bar_text_align = "center",
+			bar_text_align = "left",
 			bar_buttons_alignment = "right",
 			bar_part_of_window = true,
 			bar_precedence_over_border = true,
-			bar_padding = 10,
+			bar_padding = 14,
 			bar_button_padding = 8,
+			icon_on_hover = true,
+			inactive_button_color = "rgba(f5f7f52e)",
 			on_double_click = MAX,
 		},
 	},
 })
 
--- Right to left: close, maximize, put away.
-hl.plugin.hyprbars.add_button({ bg_color = "rgb(e0655a)", fg_color = "rgb(ffffff)", size = 16, icon = "✕",
+-- Right to left: close, maximize, put away (pleamar-wm's coral, mint, amber).
+hl.plugin.hyprbars.add_button({ bg_color = "rgb(ef7a66)", fg_color = "rgb(4a140b)", size = 12, icon = "✕",
 	action = "hyprctl dispatch 'hl.dsp.window.close()'" })
-hl.plugin.hyprbars.add_button({ bg_color = "rgba(6e6e6e8c)", fg_color = "rgb(ffffff)", size = 16, icon = "□", action = MAX })
-hl.plugin.hyprbars.add_button({ bg_color = "rgba(6e6e6e8c)", fg_color = "rgb(ffffff)", size = 16, icon = "–",
+hl.plugin.hyprbars.add_button({ bg_color = "rgb(9ed6bd)", fg_color = "rgb(0f3d2f)", size = 12, icon = "□", action = MAX })
+hl.plugin.hyprbars.add_button({ bg_color = "rgb(e8c26a)", fg_color = "rgb(4a3308)", size = 12, icon = "–",
 	action = "hyprctl eval 'minimo_gizle()'" })
 
 hl.window_rule({ match = { float = false }, ["hyprbars:no_bar"] = true })
+-- Without the keyboard, the bar is grey and its title faded, as in pleamar-wm.
+pcall(hl.window_rule, { match = { focus = false }, ["hyprbars:bar_color"] = "rgb(1a1e22)", ["hyprbars:title_color"] = "rgba(f5f7f58c)" })
 -- Chrome draws its own title bar and buttons: no second one over it.
 hl.window_rule({ match = { class = "^(google-chrome.*|chromium|Google-chrome.*)$" }, ["hyprbars:no_bar"] = true })
 
--- Minimo's light or dark theme (~/.config/minimo-os/state.json): the bar takes
--- its colours —the dock's own—, at start and whenever the dock sees the theme
--- change (it calls minimo_cubuk_tema). The buttons read on both.
-function minimo_cubuk_tema(dark)
-	hl.config({
-		plugin = {
-			hyprbars = {
-				bar_color = dark and "rgba(1f2022ff)" or "rgba(f6f6f5ff)",
-				["col.text"] = dark and "rgb(e8e8e8)" or "rgb(2b2b2b)",
-				inactive_button_color = dark and "rgba(ffffff1a)" or "rgba(0000001a)",
-			},
-		},
-	})
-end
-do
-	local f = io.open(os.getenv("HOME") .. "/.config/minimo-os/state.json")
-	local text = f and f:read("a") or ""
-	if f then f:close() end
-	minimo_cubuk_tema(text:match('"theme"%s*:%s*"dark"') ~= nil)
-end
+-- pleamar-wm's frame is always its own dark one, whatever Minimo's theme; the
+-- dock still calls this when the theme changes, and nothing changes.
+function minimo_cubuk_tema(dark) end
