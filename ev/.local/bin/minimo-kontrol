@@ -17,6 +17,9 @@ done
 for u in minimo-shell minimo-dock; do
     [ "$(systemctl --user show $u -p KillMode --value)" = "process" ] && yes "$u yeniden başlarken yalnızca kendini durdurur" || no "$u KillMode yanlış"
 done
+#  Minimo's own Hyprland parts loaded (a failed `require` drops all of them, silently).
+mods=$(hyprctl repl 'return type(minimo_serbest).." "..type(minimo_cubuk_tema)' 2>/dev/null); binds=$(hyprctl binds 2>/dev/null | grep -c "key:")
+[ "$mods" = "function function" ] && [ "$binds" -gt 50 ] && yes "Minimo'nun Hyprland modülleri ve $binds kısayol yüklü" || no "Minimo modülleri yüklenmemiş ($mods, $binds kısayol)"
 hyprctl plugin list 2>/dev/null | grep -q hyprbars && yes "başlık çubuğu eklentisi yüklü" || no "hyprbars yüklü değil"
 [ "$(cat "$XDG_RUNTIME_DIR/minimo-serbest" 2>/dev/null)" = "1" ] && yes "serbest (yüzen) pencereler açık" || no "serbest mod kapalı"
 tiled=$(hyprctl clients -j | python3 -I -c "import json,sys;print(sum(1 for c in json.load(sys.stdin) if not c['floating'] and not c['workspace']['name'].startswith('special')))")
