@@ -230,13 +230,17 @@ on("pick", function(i)
     local e = shown[(tonumber(i) or 0) + 1]
     if not e then return end
     if #e.windows == 0 then launch(e); return end
-    for k = #e.windows, 1, -1 do
-        if e.windows[k].hidden then eval('minimo_getir("' .. e.windows[k].addr .. '")'); after(150, read); return end
+    --  In front, with the keyboard: it goes down into the dock, as in
+    --  pleamar-wm (shrinking into it: serbest.lua's minimo_gizle).
+    for _, w in ipairs(e.windows) do
+        if w.active and not w.hidden then eval('minimo_gizle("' .. w.addr .. '")'); after(500, read); return end
     end
-    for k, w in ipairs(e.windows) do
-        if w.active then focus(e.windows[k % #e.windows + 1].addr); after(150, read); return end
+    --  Open but behind: the latest one comes to the front.
+    for _, w in ipairs(e.windows) do
+        if not w.hidden then focus(w.addr); hypr('hl.dsp.window.bring_to_top({ window = "address:' .. w.addr .. '" })'); after(150, read); return end
     end
-    focus(e.windows[1].addr)
+    --  All of them put away: the last one comes back out of the dock.
+    eval('minimo_getir("' .. e.windows[#e.windows].addr .. '")')
     after(150, read)
 end)
 

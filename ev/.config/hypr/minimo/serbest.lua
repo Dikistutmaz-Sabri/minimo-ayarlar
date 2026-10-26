@@ -73,21 +73,41 @@ hl.on("window.close", function(w)
 	if w then floated[w.address] = nil end
 end)
 
---  Put away into the dock, as in pleamar-wm, where it waits as a small picture
---  of itself: taken just before it goes (with its title bar, at a quarter of
---  its size) into $XDG_RUNTIME_DIR/minimo-kucuk/<address>-<time>.png, then it
---  goes. The dock shows the newest picture of each.
+--  Put away into the dock, as in pleamar-wm: a small picture of it is taken
+--  (with its title bar, at a quarter of its size, into
+--  $XDG_RUNTIME_DIR/minimo-kucuk/<address>-<time>.png: the dock shows it), then
+--  it shrinks and slides down into the dock —Hyprland's own window animation—
+--  and goes. Brought back, it grows out of the dock to where it was.
+--  The window: the one given (the dock's press), or the one with the keyboard.
 local THUMBS = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/minimo-kucuk"
-function minimo_gizle()
-	local w = hl.get_active_window()
+local was = {}        -- address → { x, y, w, h }: where it was, to go back there
+local function window_of(addr)
+	for _, w in ipairs(hl.get_windows()) do if w.address == addr then return w end end
+	return nil
+end
+function minimo_gizle(addr)
+	local w = addr and window_of(addr) or hl.get_active_window()
 	if not w then return end
-	local addr = w.address
+	addr = w.address
 	hidden[#hidden + 1] = addr
+	was[addr] = { x = w.at.x, y = w.at.y, w = w.size.x, h = w.size.y, floating = w.floating }
 	local top = (w.floating and BAR or 0)
 	local geo = string.format("%d,%d %dx%d", w.at.x, w.at.y - top, w.size.x, w.size.y + top)
-	local move = "hyprctl dispatch 'hl.dsp.window.move({ workspace = \"special:minimo\", window = \"address:" .. addr .. "\", follow = false })'"
-	hl.exec_cmd(string.format("sh -c 'mkdir -p %s; rm -f %s/%s-*.png; grim -s 0.25 -g \"%s\" %s/%s-%d.png; %s' ",
-		THUMBS, THUMBS, addr, geo, THUMBS, addr, os.time(), move:gsub("'", "'\\''")))
+	--  Where the dock is: the bottom of the screen, in the middle.
+	local m = hl.get_active_monitor()
+	local W, H = m.width / m.scale, m.height / m.scale
+	local sel = "address:" .. addr
+	local steps = {
+		string.format("hyprctl dispatch 'hl.dsp.window.resize({ x = 96, y = 60, window = \"%s\" })'", sel),
+		string.format("hyprctl dispatch 'hl.dsp.window.move({ x = %d, y = %d, window = \"%s\" })'", math.floor(W / 2 - 48), math.floor(H - 70), sel),
+		"sleep 0.32",
+		string.format("hyprctl dispatch 'hl.dsp.window.move({ workspace = \"special:minimo\", window = \"%s\", follow = false })'", sel),
+	}
+	--  Only a free window can be shrunk and slid; a tiled one just goes.
+	if not w.floating then steps = { steps[4] } end
+	local script = string.format("mkdir -p %s; rm -f %s/%s-*.png; grim -s 0.25 -g \"%s\" %s/%s-%d.png; %s",
+		THUMBS, THUMBS, addr, geo, THUMBS, addr, os.time(), table.concat(steps, "; "))
+	hl.exec_cmd("sh -c '" .. script:gsub("'", "'\\''") .. "'")
 end
 
 function minimo_getir(addr)
@@ -95,9 +115,21 @@ function minimo_getir(addr)
 	if addr == nil then return end
 	for i = #hidden, 1, -1 do if hidden[i] == addr then table.remove(hidden, i) end end
 	local ws = hl.get_active_workspace()
-	hl.dispatch(hl.dsp.window.move({ workspace = tostring(ws and ws.id or 1), window = "address:" .. addr, follow = false }))
-	hl.dispatch(hl.dsp.focus({ window = "address:" .. addr }))
+	local sel = "address:" .. addr
+	hl.dispatch(hl.dsp.window.move({ workspace = tostring(ws and ws.id or 1), window = sel, follow = false }))
+	--  Out of the dock, back to its size and place: it grows there.
+	local g = was[addr]
+	if g and g.floating then
+		hl.dispatch(hl.dsp.window.resize({ x = g.w, y = g.h, window = sel }))
+		hl.dispatch(hl.dsp.window.move({ x = g.x, y = g.y, window = sel }))
+	end
+	was[addr] = nil
+	hl.dispatch(hl.dsp.focus({ window = sel }))
 end
+
+-- Going to a window (the dock, a key) leaves the mouse where it is: it does
+-- not jump to the middle of that window.
+hl.config({ cursor = { no_warps = true } })
 
 hl.unbind("SUPER + W")
 hl.bind("SUPER + W", function() minimo_serbest() end)
