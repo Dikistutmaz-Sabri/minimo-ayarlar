@@ -328,6 +328,17 @@ on("pool", function(i)
     local id = pools[(tonumber(i) or 0) + 1]
     if id then hypr('hl.dsp.focus({ workspace = "' .. id .. '" })'); after(150, read) end
 end)
+--  A window put away (serbest.lua's minimo_gizle, when it has shrunk down to
+--  the dock): the drop falls from x, and the dock stays up while it lands.
+local drops = 0
+on("dusus", function(x)
+    drops = drops + 1
+    fact["drop.x"] = tonumber(x) or 700
+    fact.landing = true
+    fact["drop.n"] = drops
+    after(300, read)
+    after(1400, function() fact.landing = false end)
+end)
 on("mode", function() eval("minimo_serbest()"); after(200, read) end)
 
 load_pins(read)

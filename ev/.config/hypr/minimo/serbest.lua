@@ -97,14 +97,23 @@ function minimo_gizle(addr)
 	local m = hl.get_active_monitor()
 	local W, H = m.width / m.scale, m.height / m.scale
 	local sel = "address:" .. addr
+	--  It falls as things fall —slow, then faster (the minimo_dusus curve, for
+	--  this one move)— down to just above the dock, where a drop takes over
+	--  (the dock draws it, falling on into the dock and ringing the water).
+	local fall_on = "hyprctl eval 'hl.animation({ leaf = \"windowsMove\", enabled = true, speed = 4.5, bezier = \"minimo_dusus\" })'"
+	local fall_off = "hyprctl eval 'hl.animation({ leaf = \"windowsMove\", enabled = true, speed = 4, bezier = \"default\" })'"
 	local steps = {
+		fall_on,
 		string.format("hyprctl dispatch 'hl.dsp.window.resize({ x = 96, y = 60, window = \"%s\" })'", sel),
-		string.format("hyprctl dispatch 'hl.dsp.window.move({ x = %d, y = %d, window = \"%s\" })'", math.floor(W / 2 - 48), math.floor(H - 70), sel),
-		"sleep 0.32",
+		string.format("hyprctl dispatch 'hl.dsp.window.move({ x = %d, y = %d, window = \"%s\" })'", math.floor(W / 2 - 48), math.floor(H - 164), sel),
+		"sleep 0.42",
+		"pleamar --say dock 'emit dusus 700' >/dev/null 2>&1",
 		string.format("hyprctl dispatch 'hl.dsp.window.move({ workspace = \"special:minimo\", window = \"%s\", follow = false })'", sel),
+		fall_off,
 	}
-	--  Only a free window can be shrunk and slid; a tiled one just goes.
-	if not w.floating then steps = { steps[4] } end
+	--  Only a free window can be shrunk and dropped; a tiled one just goes
+	--  (and its drop still falls into the dock).
+	if not w.floating then steps = { steps[5], steps[6] } end
 	local script = string.format("mkdir -p %s; rm -f %s/%s-*.png; grim -s 0.25 -g \"%s\" %s/%s-%d.png; %s",
 		THUMBS, THUMBS, addr, geo, THUMBS, addr, os.time(), table.concat(steps, "; "))
 	hl.exec_cmd("sh -c '" .. script:gsub("'", "'\\''") .. "'")
@@ -130,6 +139,8 @@ end
 -- Going to a window (the dock, a key) leaves the mouse where it is: it does
 -- not jump to the middle of that window.
 hl.config({ cursor = { no_warps = true } })
+-- The curve a window falls by, into the dock: slow, then faster.
+hl.curve("minimo_dusus", { type = "bezier", points = { { 0.55, 0 }, { 1, 0.45 } } })
 
 hl.unbind("SUPER + W")
 hl.bind("SUPER + W", function() minimo_serbest() end)

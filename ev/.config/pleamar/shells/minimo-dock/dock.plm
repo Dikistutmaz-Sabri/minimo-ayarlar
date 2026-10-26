@@ -60,11 +60,18 @@ scene MinimoDock {
     event back ->
     event pool ->
     event mode ->
+    //  A window put away: from where it shrank to (drop.x, in this surface's
+    //  coordinates), a drop falls into the dock and rings the water there
+    //  (dock.luau counts drop.n up; landing keeps the dock up meanwhile).
+    fact drop.x = 700
+    fact drop.n = 0
+    fact landing = false
+    event dusus ->
 
     // ── where things go ──
     spring rise = 190, 20
     prop sh = 0 ~rise
-    follow sh = if((hide or not free) and not reveal and peek < 0 and menu < 0 and carry < 0, 0, 1)
+    follow sh = if((hide or not free) and not reveal and not landing and peek < 0 and menu < 0 and carry < 0, 0, 1)
     let on = sh > 0.6
     let tw = 28 + n * 60 + if(a > 0, 20 + a * 76, 0) + 20 + p * 26 + 52
     prop dkw = 200 ~lively
@@ -242,6 +249,40 @@ scene MinimoDock {
         on enter mode_z { mglow: 1 }
         on leave mode_z { mglow: 0 }
         on press mode_z { emit mode }
+    }
+
+    // ── a window put away: the drop falls into the dock ──
+    //  As in pleamar-wm, falling faster and faster (dt²), drawn out along its
+    //  way; where it lands, the water rings, twice.
+    prop dt = 1 ~520ms
+    prop rp = 1 ~760ms
+    on change drop.n {
+        dt: 0 ~0ms
+        dt: 1 ~520ms after 16ms
+        rp: 0 ~0ms
+        rp: 1 ~760ms after 500ms
+    }
+    let lx = xa + max(a - 1, 0) * 76 + 38
+    let fall = dt * dt
+    let dx = drop.x + (lx - drop.x) * dt
+    let dy = 196 + (cy - 196) * fall
+    group {
+        show: dt < 0.99
+        body {
+            color: #9ed6bd
+            rim: 30%
+            shadow: 0, 3, 8, 35%
+            ellipse { at: dx, dy; radius: 9 - 3 * fall; scale: 1 - 0.25 * fall, 1 + 0.6 * fall }
+        }
+        //  Its glint, and two droplets behind it.
+        ellipse { at: dx - 2.5, dy - 3; radius: 2; scale: 1.3, 0.75; color: #ffffff; opacity: 70% }
+        ellipse { at: drop.x + (lx - drop.x) * max(dt - 0.12, 0), 196 + (cy - 196) * pow(max(dt - 0.12, 0), 2); radius: 3.5; color: mint; opacity: 55% * (1 - dt) }
+        ellipse { at: drop.x + (lx - drop.x) * max(dt - 0.24, 0), 196 + (cy - 196) * pow(max(dt - 0.24, 0), 2); radius: 2.2; color: mint; opacity: 40% * (1 - dt) }
+    }
+    group {
+        show: rp < 0.99
+        ellipse { at: lx, cy + 18; radius: 14 + 34 * rp; scale: 1, 0.32; stroke: 1.6 * (1 - rp) + 0.3; color: mint; opacity: 70% * (1 - rp) }
+        ellipse { at: lx, cy + 18; radius: 8 + 22 * max(rp - 0.15, 0); scale: 1, 0.32; stroke: 1.2 * (1 - rp) + 0.3; color: ink; opacity: 45% * (1 - rp) }
     }
 
     // ── held: its windows, to pick one ──
