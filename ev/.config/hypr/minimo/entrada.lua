@@ -4,14 +4,23 @@
 
 hl.config({
 	input = {
-		kb_layout = "tr,us",          -- Türkçe Q; Alt+Shift: US
+		kb_layout = "tr,us",          -- Türkçe Q; Alt+Shift: US (minimo-ayarlar)
 		kb_options = "grp:alt_shift_toggle",
 		numlock_by_default = true,
 		follow_mouse = 0,             -- el foco no sigue al mouse
 		touchpad = {
 			tap_to_click = true,
 			natural_scroll = true,
+			disable_while_typing = true,   -- la palma no mueve el puntero mientras escribís
+			clickfinger_behavior = true,   -- clic con dos dedos = clic derecho (como en macOS)
+			drag_lock = true,              -- arrastrar con toque: levantar el dedo un instante no suelta
 		},
+	},
+	gestures = {
+		workspace_swipe_distance = 260,          -- recorrido más corto: menos esfuerzo
+		workspace_swipe_cancel_ratio = 0.25,     -- un desliz corto que no llega se cancela suave
+		workspace_swipe_min_speed_to_force = 20, -- un golpe rápido cambia aunque sea corto
+		workspace_swipe_forever = true,          -- sin soltar, sigue pasando escritorios
 	},
 })
 

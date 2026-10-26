@@ -102,6 +102,10 @@ end
 hl.unbind("SUPER + W")
 hl.bind("SUPER + W", function() minimo_serbest() end)
 hl.bind("SUPER + G", hl.dsp.group.toggle())
+-- (Minimo 1.2.3 put «screen off» on Super+Shift+M; here it brings back what
+-- was put away, as in pleamar-wm. The screen goes off with Super+Shift+P.)
+hl.unbind("SUPER + M")
+hl.unbind("SUPER + SHIFT + M")
 hl.bind("SUPER + M", function() minimo_gizle() end)
 hl.bind("SUPER + SHIFT + M", function() minimo_getir() end)
 

@@ -7,7 +7,7 @@ language 0.1
 
 scene MinimoKeys {
     surface {
-        size: 440, 1072
+        size: 440, 1115
         anchor: left
         margin: 0, 0, 0, 40
         level: bottom
@@ -17,36 +17,36 @@ scene MinimoKeys {
     let ink = #ffffff
     let faint = #d6d9dd
 
-    box { from: 0, 0; size: 440, 1072; corner: 22; color: #101214; opacity: 64% }
-    box { from: 0, 0; size: 440, 1072; corner: 22; stroke: 1; color: #ffffff; opacity: 10% }
+    box { from: 0, 0; size: 440, 1115; corner: 22; color: #101214; opacity: 64% }
+    box { from: 0, 0; size: 440, 1115; corner: 22; stroke: 1; color: #ffffff; opacity: 10% }
     text "Klavye kısayolları" { at: 24, 32; anchor: left center; size: 17; weight: 700; color: ink; family: "Adwaita Sans"
                                 shadow: 0, 1, 3, 60% }
     text "Minimo OS · Super = Windows tuşu" { at: 24, 54; anchor: left center; size: 10.5; color: faint; family: "Adwaita Sans" }
     box { from: 24, 70; size: 392, 1; color: #ffffff; opacity: 16% }
 
-    repeat k in 0..29 {
+    repeat k in 0..32 {
         let ky = 90 + k * 21.6
         text pick(k, "Super+T", "Super+B", "Super+Boşluk", "Super+X", "Super+V", "Super+Tab", "Super+,",
                      "Super+Q", "Super+F", "Super+Shift+F", "Super+Shift+T", "Super+W", "Super+G", "Super+M", "Super+Shift+M", "Super+R",
                      "Super+Oklar", "Super+Shift+Oklar", "Super+1…3", "Super+Shift+1…3", "Super+PgUp/PgDn",
                      "Super+Tekerlek", "Super+− / =", "Super+Sol / Sağ tık", "Print · Ctrl+Print",
-                     "Super+Shift+R", "Super+Shift+P", "Super+Shift+Esc", "Super+Shift+E") {
+                     "Super+Shift+R", "Super+Shift+P", "Super+Shift+Esc", "Super+F1 · Super+/", "Super+N · Super+Shift+N", "Super+Shift+E") {
              at: 24, ky; anchor: left center; size: 11.5; weight: 700; width: 170; lines: 1; color: ink; family: "Adwaita Sans"
              shadow: 0, 1, 2, 50% }
         text pick(k, "Terminal (kitty)", "Uygulama başlatıcı", "Hızlı başlatıcı (fuzzel)", "Ada menüsü", "Pano geçmişi", "Pencereler, bir bakışta", "Ayarlar",
                      "Pencereyi kapat", "Büyüt", "Tam ekran", "Yüzen pencere", "Serbest / döşeli pencereler", "Pencere grubu", "Pencereyi docka gizle", "Son gizleneni geri getir", "Bölmeyi döndür",
                      "O yöndeki pencereye geç", "Pencereyi o yöne taşı", "O masaüstüne git", "Pencereyi o masaüstüne gönder", "Önceki / sonraki masaüstü",
                      "Masaüstleri arasında gez", "Daralt / genişlet", "Taşı / boyutlandır (sürükle)", "Ekran görüntüsü: alan · tümü",
-                     "Ekran kaydı", "Ekranı kapat / aç", "Kabuk takılırsa yeniden başlat", "Oturumu kapat") {
+                     "Ekran kaydı", "Ekranı kapat / aç", "Kabuk takılırsa yeniden başlat", "Bütün kısayollar (yardım)", "Rahatsız etme · bildirimleri temizle", "Oturumu kapat") {
              at: 200, ky; anchor: left center; size: 11.5; width: 220; lines: 1; color: faint; family: "Adwaita Sans"
              shadow: 0, 1, 2, 50% }
     }
     //  The gestures: the touchpad's, and the island's (Minimo's pill at the top).
-    text "Hareketler" { at: 24, 759; anchor: left center; size: 14; weight: 700; color: ink; family: "Adwaita Sans"
+    text "Hareketler" { at: 24, 802; anchor: left center; size: 14; weight: 700; color: ink; family: "Adwaita Sans"
                         shadow: 0, 1, 3, 60% }
-    box { from: 24, 775; size: 392, 1; color: #ffffff; opacity: 16% }
+    box { from: 24, 818; size: 392, 1; color: #ffffff; opacity: 16% }
     repeat g in 0..12 {
-        let gy = 793 + g * 21.6
+        let gy = 836 + g * 21.6
         text pick(g, "3 parmak yana", "Adaya tıkla", "Minimo'ya tıkla", "Adada sağa kaydır", "Adada sola kaydır",
                      "Adada aşağı kaydır", "Panelde yana kaydır", "Uyarıya sağ tık", "Adada tekerlek", "Dock'ta sağ tık", "Başlığa çift tık", "Masaüstüne sağ tık") {
              at: 24, gy; anchor: left center; size: 11.5; weight: 700; width: 170; lines: 1; color: ink; family: "Adwaita Sans"
@@ -56,5 +56,5 @@ scene MinimoKeys {
              at: 200, gy; anchor: left center; size: 11.5; width: 220; lines: 1; color: faint; family: "Adwaita Sans"
              shadow: 0, 1, 2, 50% }
     }
-    text "Alt+Shift: Türkçe Q ⇄ İngilizce klavye" { at: 24, 1052; anchor: left center; size: 10.5; color: faint; family: "Adwaita Sans" }
+    text "Alt+Shift: Türkçe Q ⇄ İngilizce klavye" { at: 24, 1095; anchor: left center; size: 10.5; color: faint; family: "Adwaita Sans" }
 }
