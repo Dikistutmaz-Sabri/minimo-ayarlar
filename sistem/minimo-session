@@ -6,4 +6,8 @@ export XDG_CURRENT_DESKTOP=Hyprland:Minimo
 export XDG_SESSION_DESKTOP=minimo
 start-hyprland -- --config "$HOME/.config/hypr/minimo-oturum.lua"
 systemctl --user stop minimo-session.target
+# The portals started here keep Minimo's desktop name for good (the user's
+# systemd outlives the session): Plasma after it got no KDE portal, so no
+# global shortcuts. Stopped, the next session starts them with its own.
+systemctl --user stop xdg-desktop-portal.service xdg-desktop-portal-gtk.service
 systemctl --user unset-environment XDG_SESSION_DESKTOP
