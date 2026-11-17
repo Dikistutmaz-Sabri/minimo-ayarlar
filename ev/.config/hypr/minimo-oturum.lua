@@ -36,3 +36,4 @@ require("minimo.cubuk")        -- title bars with buttons on free windows
 require("minimo.masaustu")     -- three workspaces
 pcall(hl.plugin.load, os.getenv("HOME") .. "/.local/lib/minimo-genie/minimo-genie.so") -- minimo-genie
 pcall(hl.plugin.load, os.getenv("HOME") .. "/.local/lib/minimo-desks/minimo-desks.so") -- minimo-desks
+pcall(hl.plugin.load, os.getenv("HOME") .. "/.local/lib/minimo-abyssal/minimo-abyssal.so") -- minimo-abyssal
