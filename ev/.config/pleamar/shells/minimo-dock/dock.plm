@@ -18,12 +18,12 @@ language 0.1
 
 scene MinimoDock {
     surface {
-        size: 1400, 330
+        size: 1400, 520
         anchor: bottom
         margin: 0, 0, 0, 0
         level: top
         reserve: 0
-        keyboard: none
+        keyboard: exclusive while appsopen
     }
     permissions {
         run: "hyprctl", "sh"
@@ -33,6 +33,20 @@ scene MinimoDock {
     let ink = #f5f7f5
     let mint = #9ed6bd
     let coral = #ef7a66
+    let glass_tint = #2b3139      // MacShell ailesi soğuk dumanlı sıvı cam
+
+    //  Launchpad: impasto'daki gibi bir apps ikonu, soldaki düğme; basınca
+    //  bütün uygulamaların ızgarası (apps servisinden, dock.luau doldurur).
+    image apps_ico = file "cachyos.svg", 64, 64
+    text draft = ""             // arama kutusunun metni
+    model pad max 200 { icon: image 96, 96; name: text; letter: text; head: bool = false }
+    model azs max 30 { ch: text; row: number = 0; active: bool = false }
+    fact g = 0                  // launcher'da gösterilen uygulama sayısı
+    fact sel = 0                // seçili satır (klavye)
+    fact appsopen = false
+    event launch_app ->
+    event apps_toggle ->
+    event slid ->
 
     model items max 16 { icon: image 96, 96; name: text; wins: number = 0; active: bool = false; urgent: bool = false; pinned: bool = false }
     model away max 8 { thumb: image 160, 100; icon: image 40, 40; title: text; has_thumb: bool = false }
@@ -71,37 +85,42 @@ scene MinimoDock {
     // ── where things go ──
     spring rise = 190, 20
     prop sh = 0 ~rise
-    follow sh = if((hide or not free) and not reveal and not landing and peek < 0 and menu < 0 and carry < 0, 0, 1)
+    follow sh = if((hide or not free) and not reveal and not landing and peek < 0 and menu < 0 and carry < 0 and not appsopen, 0, 1)
     let on = sh > 0.6
-    let tw = 28 + n * 60 + if(a > 0, 20 + a * 76, 0) + 20 + p * 26 + 52
+    let tw = 28 + 60 + n * 60 + if(a > 0, 20 + a * 76, 0) + 20 + p * 26 + 52
     prop dkw = 200 ~lively
     follow dkw = tw
     let x0 = 700 - dkw / 2
-    let cy = 330 + 42 - 88 * sh
-    let xa = x0 + 14 + n * 60 + 20
+    let cy = 520 + 42 - 88 * sh
+    let xi = x0 + 14 + 60            // apps düğmesinden sonra programlar başlar
+    let xa = xi + n * 60 + 20
     let xp = x0 + dkw - 14 - 52 - p * 26
     let xm = x0 + dkw - 14 - 26
     //  The wave of buoys: where the mouse is, in programs.
-    let t = (pointer.x - x0 - 14) / 60 - 0.5
+    let t = (pointer.x - xi) / 60 - 0.5
 
     //  Sunk, the bottom edge waits for the mouse.
-    zone box edge { from: 0, 322; size: 1400, 8; active: sh < 0.4 }
+    zone box edge { from: 0, 512; size: 1400, 8; active: sh < 0.4 }
     on enter edge { reveal = true }
 
     //  Anywhere else, while a list or a menu is up: it closes them.
-    zone box outside { from: 0, 0; size: 1400, 330; active: peek >= 0 or menu >= 0 }
-    on press outside { peek = -1; menu = -1 }
-    on press right outside { peek = -1; menu = -1 }
+    zone box outside { from: 0, 0; size: 1400, 520; active: peek >= 0 or menu >= 0 or appsopen }
+    on press outside { peek = -1; menu = -1; appsopen = false }
+    on press right outside { peek = -1; menu = -1; appsopen = false }
 
     // ── the shore, joined to the edge by a neck ──
     group {
         show: sh > 0.01
         body {
-            gradient: 0, cy - 32 to 0, cy + 32, #15181b, #0c0e10 45%, #0a0b0d
-            rim: 12%
-            shadow: 0, 12, 34, 42%
-            box { from: -80, 330; size: 1560, 140 }
-            box { at: x0 + dkw / 2, cy; size: dkw * (0.55 + 0.45 * sh), 64; corner: 22; blend: 22 + 36 * 4 * sh * (1 - sh) }
+            color: glass_tint
+            glass: 90%
+            lens: false
+            rim: 45%
+            shine: pointer
+            highlight: 70%
+            shadow: 0, 18, 46, 40%
+            box { from: -80, 520; size: 1560, 140 }
+            box { at: x0 + dkw / 2, cy; size: dkw * (0.55 + 0.45 * sh), 64; corner: 26; blend: 22 + 36 * 4 * sh * (1 - sh) }
         }
     }
     zone box shore_z { at: x0 + dkw / 2, cy; size: dkw, 64; corner: 22; active: on }
@@ -115,18 +134,18 @@ scene MinimoDock {
         size: 60, 64
         prop glow = 0 ~140ms
         prop buoy = 0 ~lively
-        follow buoy = if(near and carry < 0, pow(max(0, 1 - abs(d.index - t) / 1.8), 2), 0)
+        follow buoy = if(near and carry < 0, pow(max(0, 1 - abs(d.index - t) / 2.2), 2), 0)
         prop ring = 1 ~760ms
         let carried = if(carry == d.index, 1, 0)
-        let s = 44 * (1 + 0.14 * buoy)
+        let s = 42 * (1 + 0.62 * buoy)
         group {
             move: carried * drag.dx, carried * drag.dy
             opacity: 1 - carried * 0.35
             //  Pressed: it rings the water under it.
             ellipse { at: 30, 54; radius: 18 + 30 * ring; scale: 1, 0.32; stroke: 1.4 * (1 - ring) + 0.3; color: ink; opacity: 45% * (1 - ring); show: ring < 0.99 }
-            image d.icon { at: 30 - s / 2, 29 - 12 * buoy - s / 2; size: s, s }
+            image d.icon { at: 30 - s / 2, 29 - 20 * buoy - s / 2; size: s, s }
             //  Something unread, a window asking: a coral drop.
-            ellipse { at: 30 + s * 0.38, 29 - 12 * buoy - s * 0.38; radius: 4.5; color: coral; show: d.urgent }
+            ellipse { at: 30 + s * 0.38, 29 - 20 * buoy - s * 0.38; radius: 4.5; color: coral; show: d.urgent }
             //  A drop per window (one, two, three or more), mint for the one with the keyboard.
             ellipse { at: 30, 57; radius: if(d.active, 2.4, 2); color: if(d.active, mint, ink); opacity: if(d.active, 95%, 55%); show: d.wins == 1 or d.wins >= 3 }
             ellipse { at: 26.5, 57; radius: if(d.active, 2.4, 2); color: if(d.active, mint, ink); opacity: if(d.active, 95%, 55%); show: d.wins == 2 }
@@ -161,8 +180,28 @@ scene MinimoDock {
         on press right touch { menu = d.index; peek = -1; emit menu_at(d.index) }
         on drop touch { emit dropped(d.index) }
     }
-    row { at: x0 + 14, cy - 32; gap: 0
+    row { at: xi, cy - 32; gap: 0
         for d in items { Item(d) } }
+
+    // ── apps / Launchpad düğmesi (impasto'daki apps ikonu, soldaki uç) ──
+    group {
+        show: sh > 0.01
+        prop aglow = 0 ~140ms
+        prop adip = 0 ~lively
+        let as = 38 * (1 + 0.14 * aglow)
+        image apps_ico { at: x0 + 44 - as / 2, cy - 2 - 3 * adip - as / 2; size: as, as }
+        ellipse { at: x0 + 44, cy + 25; radius: 2.4; color: mint; opacity: if(appsopen, 95%, 0%) }
+        group {
+            opacity: aglow * if(peek < 0 and menu < 0 and carry < 0 and not appsopen, 1, 0)
+            body { color: #15181b; rim: 12%; shadow: 0, 4, 12, 40%
+                   box { at: x0 + 44, cy - 58; size: 150, 28; corner: 10 } }
+            text "Uygulamalar" { at: x0 + 44, cy - 58; anchor: center; size: 12; weight: 500; color: ink }
+        }
+        zone box apps_z { at: x0 + 44, cy; size: 54, 60; corner: 14; cursor: pointer; label: "Uygulamalar"; role: button; active: on }
+        on enter apps_z { aglow: 1 }
+        on leave apps_z { aglow: 0 }
+        on press apps_z { impulse adip 1; toggle appsopen; emit apps_toggle }
+    }
 
     // ── a line of water, then the windows put away ──
     box { at: xa - 10, cy; size: 1, 30; color: ink; opacity: 18%; show: a > 0 and sh > 0.01 }
@@ -254,18 +293,18 @@ scene MinimoDock {
     // ── a window put away: the drop falls into the dock ──
     //  As in pleamar-wm, falling faster and faster (dt²), drawn out along its
     //  way; where it lands, the water rings, twice.
-    prop dt = 1 ~520ms
-    prop rp = 1 ~760ms
+    prop dt = 1 ~340ms
+    prop rp = 1 ~620ms
     on change drop.n {
         dt: 0 ~0ms
-        dt: 1 ~520ms after 16ms
+        dt: 1 ~340ms after 16ms
         rp: 0 ~0ms
-        rp: 1 ~760ms after 500ms
+        rp: 1 ~620ms after 320ms
     }
     let lx = xa + max(a - 1, 0) * 76 + 38
     let fall = dt * dt
     let dx = drop.x + (lx - drop.x) * dt
-    let dy = 196 + (cy - 196) * fall
+    let dy = 356 + (cy - 356) * fall
     group {
         show: dt < 0.99
         body {
@@ -276,8 +315,8 @@ scene MinimoDock {
         }
         //  Its glint, and two droplets behind it.
         ellipse { at: dx - 2.5, dy - 3; radius: 2; scale: 1.3, 0.75; color: #ffffff; opacity: 70% }
-        ellipse { at: drop.x + (lx - drop.x) * max(dt - 0.12, 0), 196 + (cy - 196) * pow(max(dt - 0.12, 0), 2); radius: 3.5; color: mint; opacity: 55% * (1 - dt) }
-        ellipse { at: drop.x + (lx - drop.x) * max(dt - 0.24, 0), 196 + (cy - 196) * pow(max(dt - 0.24, 0), 2); radius: 2.2; color: mint; opacity: 40% * (1 - dt) }
+        ellipse { at: drop.x + (lx - drop.x) * max(dt - 0.12, 0), 356 + (cy - 356) * pow(max(dt - 0.12, 0), 2); radius: 3.5; color: mint; opacity: 55% * (1 - dt) }
+        ellipse { at: drop.x + (lx - drop.x) * max(dt - 0.24, 0), 356 + (cy - 356) * pow(max(dt - 0.24, 0), 2); radius: 2.2; color: mint; opacity: 40% * (1 - dt) }
     }
     group {
         show: rp < 0.99
@@ -338,4 +377,84 @@ scene MinimoDock {
             }
         }
     }
+
+    // ── Launchpad: impasto'nun launcher'ı gibi — arama kutusu, alfabetik
+    //  uygulama listesi ve sağda "rehber" gibi büyüyen A-Z şeridi. ──
+    let lpx = 700
+    let lpw = 660
+    let lpt = 16                           // panelin üst kenarı
+    let lpb = cy - 54                      // panelin alt kenarı (şeridin üstünde)
+    let lvh = lpb - lpt - 82               // listenin görünen yüksekliği
+    let azh = clamp(lvh / max(azs.count, 1), 9, 20)
+
+    //  bir uygulama satırı: simge + ad, solda harf bölümü başlığı
+    component PadRow(d: record) {
+        size: 576, 44
+        prop rglow = 0 ~120ms
+        let picked = if(sel == d.index, 1, 0)
+        box { at: 288, 22; size: 572, 40; corner: 12; color: ink; opacity: 14% * picked + 8% * rglow * (1 - picked) }
+        text d.letter { at: 20, 22; anchor: center; size: 12; weight: 700; color: mint; opacity: if(d.head, 70%, 0%) }
+        image d.icon { at: 44, 8; size: 28, 28 }
+        text d.name { at: 84, 22; anchor: left center; size: 13.5; width: 432; lines: 1; color: ink }
+        //  view: yalnız çizimi kırpar; görünüm dışına kaymış satır basış yakalamasın
+        zone box hit { at: 288, 22; size: 576, 44; cursor: pointer; label: d.name; role: item; selected: sel == d.index; active: appsopen and pointer.y >= lpt + 70 and pointer.y < lpt + 70 + lvh }
+        on enter hit { rglow: 1 }
+        on leave hit { rglow: 0 }
+        on press hit { appsopen = false; emit launch_app(d.index) }
+    }
+    //  A-Z şeridi: harfe dokununca o bölüme atlar; tepedeki harf dock simgesi gibi büyür
+    component AzLetter(L: record) {
+        size: 22, azh
+        prop lg = 0 ~120ms
+        prop ac = 0 ~150ms
+        follow ac = if(L.active, 1, 0)
+        group {
+            pivot: 22, azh / 2
+            scale: 1 + 0.9 * ac
+            text L.ch { at: 11, azh / 2; anchor: center; size: 10.5; weight: 600; color: mix(ink, mint, max(ac, lg)) }
+        }
+        zone box hit { at: 11, azh / 2; size: 22, azh; cursor: pointer; label: L.ch; active: appsopen }
+        on enter hit { lg: 1 }
+        on leave hit { lg: 0 }
+        on press hit { list.scroll: L.row * 44 ~calm }
+    }
+
+    group {
+        show: appsopen
+        body {
+            color: glass_tint
+            glass: 90%
+            lens: false
+            rim: 42%
+            highlight: 55%
+            shadow: 0, 18, 48, 48%
+            box { at: lpx, (lpt + lpb) / 2; size: lpw, lpb - lpt; corner: 26 }
+        }
+        //  arama alanı
+        image apps_ico { at: lpx - lpw / 2 + 22, lpt + 30 - 9; size: 18, 18 }
+        input draft { at: lpx - lpw / 2 + 52, lpt + 22; width: lpw - 150; size: 15; color: ink; placeholder: "Ara…" }
+        box { at: lpx, lpt + 58; size: lpw - 36, 1; color: ink; opacity: 20% }
+        text "Sonuç yok" { at: lpx, lpt + 130; anchor: center; size: 13; color: ink; opacity: 45%; show: g == 0 }
+        //  alfabetik uygulama listesi
+        column list { at: lpx - lpw / 2 + 16, lpt + 70; view: lpw - 84, lvh; step: 44; gap: 0
+            for d in pad { PadRow(d) }
+        }
+        //  kaydırma çubuğu
+        box { from: lpx + lpw / 2 - 50, lpt + 70 + list.scroll / max(list.content, 1) * lvh
+              size: 3, lvh * lvh / max(list.content, lvh); corner: 2; color: ink; opacity: 22%; show: list.content > lvh }
+        //  A-Z hızlı şeridi
+        column az { at: lpx + lpw / 2 - 34, lpt + 70; gap: 0
+            for L in azs { AzLetter(L) }
+        }
+    }
+
+    //  listenin tepesindeki harfi mantığa bildir (şeritte büyüsün)
+    on change floor(list.scroll / 44) { emit slid(floor(list.scroll / 44)) }
+    //  açılınca arama alanına odak; klavye gezinmesi; Esc kapatır
+    on change appsopen while appsopen { focus draft; sel = 0; list.scroll: 0 ~0ms }
+    on key Escape { appsopen = false }
+    on key Down { sel = min(sel + 1, max(g - 1, 0)) }
+    on key Up { sel = max(sel - 1, 0) }
+    on change sel { list.scroll: clamp(sel * 44 - 140, 0, max(list.content - lvh, 0)) ~calm }
+    on submit draft { appsopen = false; emit launch_app(sel) }
 }

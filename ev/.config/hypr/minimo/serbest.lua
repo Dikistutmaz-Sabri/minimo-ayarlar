@@ -100,13 +100,13 @@ function minimo_gizle(addr)
 	--  It falls as things fall —slow, then faster (the minimo_dusus curve, for
 	--  this one move)— down to just above the dock, where a drop takes over
 	--  (the dock draws it, falling on into the dock and ringing the water).
-	local fall_on = "hyprctl eval 'hl.animation({ leaf = \"windowsMove\", enabled = true, speed = 4.5, bezier = \"minimo_dusus\" })'"
+	local fall_on = "hyprctl eval 'hl.animation({ leaf = \"windowsMove\", enabled = true, speed = 6.5, bezier = \"minimo_dusus\" })'"
 	local fall_off = "hyprctl eval 'hl.animation({ leaf = \"windowsMove\", enabled = true, speed = 4, bezier = \"default\" })'"
 	local steps = {
 		fall_on,
 		string.format("hyprctl dispatch 'hl.dsp.window.resize({ x = 96, y = 60, window = \"%s\" })'", sel),
 		string.format("hyprctl dispatch 'hl.dsp.window.move({ x = %d, y = %d, window = \"%s\" })'", math.floor(W / 2 - 48), math.floor(H - 164), sel),
-		"sleep 0.42",
+		"sleep 0.28",
 		"pleamar --say dock 'emit dusus 700' >/dev/null 2>&1",
 		string.format("hyprctl dispatch 'hl.dsp.window.move({ workspace = \"special:minimo\", window = \"%s\", follow = false })'", sel),
 		fall_off,
@@ -140,7 +140,7 @@ end
 -- not jump to the middle of that window.
 hl.config({ cursor = { no_warps = true } })
 -- The curve a window falls by, into the dock: slow, then faster.
-hl.curve("minimo_dusus", { type = "bezier", points = { { 0.55, 0 }, { 1, 0.45 } } })
+hl.curve("minimo_dusus", { type = "bezier", points = { { 0.42, 0 }, { 0.82, 1 } } })
 
 hl.unbind("SUPER + W")
 hl.bind("SUPER + W", function() minimo_serbest() end)

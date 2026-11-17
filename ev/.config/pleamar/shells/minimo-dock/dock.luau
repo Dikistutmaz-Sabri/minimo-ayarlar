@@ -341,5 +341,64 @@ on("dusus", function(x)
 end)
 on("mode", function() eval("minimo_serbest()"); after(200, read) end)
 
+--  Launchpad: impasto's launcher. The apps button opens a search field over an
+--  alphabetical list of every app (the `apps` service), with an A-Z strip; type
+--  to filter, Enter or a press starts the selected one.
+local all_apps = {}     -- the whole list, by name
+local pad_apps = {}     -- what is shown now (filtered), to launch by index
+local azs_now = {}      -- the A-Z strip's letters and where each begins
+
+local function first_letter(s)
+    local c = tostring(s):sub(1, 1):upper()
+    return c:match("%a") and c or "#"
+end
+
+--  Mark the strip's letter at the top of the list (grows, dock-like).
+local function mark(letter)
+    for _, e in ipairs(azs_now) do e.active = (e.ch == letter) end
+    model.azs = azs_now
+end
+
+local function build(q)
+    q = tostring(q or ""):lower()
+    local rows, azs = {}, {}
+    pad_apps = {}
+    local prev = ""
+    for _, a in ipairs(all_apps) do
+        local nm = name_of(a)
+        if q == "" or nm:lower():find(q, 1, true) then
+            local L = first_letter(nm)
+            local head = (q == "" and L ~= prev)
+            if q == "" then prev = L end
+            pad_apps[#pad_apps + 1] = a
+            rows[#rows + 1] = { icon = tostring(a.icon or ""), name = nm, letter = L, head = head }
+            if head then azs[#azs + 1] = { ch = L, row = #rows - 1, active = false } end
+        end
+    end
+    if #azs > 0 then azs[1].active = true end
+    azs_now = azs
+    model.pad = rows
+    fact.g = #rows
+    fact.sel = 0
+    model.azs = azs
+end
+
+on("apps_toggle", function()
+    all_apps = {}
+    for _, a in ipairs(apps) do if name_of(a) ~= "" then all_apps[#all_apps + 1] = a end end
+    table.sort(all_apps, function(x, y) return name_of(x):lower() < name_of(y):lower() end)
+    text.draft = ""
+    build("")
+end)
+on("text:draft", function(q) build(q) end)
+on("launch_app", function(k)
+    local a = pad_apps[(tonumber(k) or 0) + 1]
+    if a then launch({ app = a }) end
+end)
+on("slid", function(top)
+    local a = pad_apps[(tonumber(top) or 0) + 1]
+    if a then mark(first_letter(name_of(a))) end
+end)
+
 load_pins(read)
 every(500, read)
