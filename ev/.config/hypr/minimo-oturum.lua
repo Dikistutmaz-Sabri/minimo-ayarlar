@@ -34,3 +34,5 @@ require("minimo.serbest")      -- free windows and the dock's putting away, as i
 require("minimo.terminal")     -- kitty as the terminal
 require("minimo.cubuk")        -- title bars with buttons on free windows
 require("minimo.masaustu")     -- three workspaces
+pcall(hl.plugin.load, os.getenv("HOME") .. "/.local/lib/minimo-genie/minimo-genie.so") -- minimo-genie
+pcall(hl.plugin.load, os.getenv("HOME") .. "/.local/lib/minimo-desks/minimo-desks.so") -- minimo-desks
